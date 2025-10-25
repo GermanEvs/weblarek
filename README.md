@@ -98,3 +98,121 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+Данные
+Интерфейсы
+
+1. Товар (Product)
+
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+}
+
+
+Назначение:
+Интерфейс IProduct описывает структуру объекта товара в приложении. С его помощью хранятся все сведения о товаре, включая уникальный идентификатор, название, описание, категорию, изображение и цену. Поле price может быть null, если цена отсутствует.
+
+2. Покупатель (Buyer)
+
+interface IBuyer {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+
+Назначение:
+Интерфейс IBuyer описывает данные покупателя, которые нужны для оформления заказа: способ оплаты (card или cash), email, телефон и адрес доставки.
+
+Модели данных
+1. Каталог товаров (Products)
+
+Файл: src/models/Products.ts
+
+Назначение:
+Хранит массив всех товаров, а также товар, выбранный для детального просмотра.
+
+Поля:
+
+items: IProduct[] — массив всех товаров.
+
+selectedItem: IProduct | null — выбранный товар для детального отображения.
+
+Методы:
+
+setItems(items: IProduct[]): void — сохранить массив товаров.
+
+getItems(): IProduct[] — получить массив всех товаров.
+
+getItemById(id: string): IProduct | undefined — получить товар по id.
+
+setSelectedItem(item: IProduct): void — сохранить выбранный товар.
+
+getSelectedItem(): IProduct | null — получить выбранный товар.
+
+2. Корзина (Cart)
+
+Файл: src/models/Cart.ts
+
+Назначение:
+Хранит товары, выбранные покупателем для покупки.
+
+Поля:
+
+items: IProduct[] — массив товаров в корзине.
+
+Методы:
+
+getItems(): IProduct[] — получить массив товаров в корзине.
+
+addItem(item: IProduct): void — добавить товар в корзину.
+
+removeItem(item: IProduct): void — удалить товар из корзины.
+
+clear(): void — очистить корзину.
+
+getTotal(): number — получить общую стоимость товаров.
+
+getCount(): number — получить количество товаров в корзине.
+
+hasItem(id: string): boolean — проверить наличие товара по id.
+
+3. Покупатель (Buyer)
+
+Файл: src/models/Buyer.ts
+
+Назначение:
+Хранит данные покупателя для оформления заказа, выполняет их сохранение и валидацию.
+
+Поля:
+
+data: Partial<IBuyer> — объект с данными покупателя (payment, email, phone, address).
+
+Методы:
+
+setPayment(payment: TPayment): void — сохранить вид оплаты.
+
+setEmail(email: string): void — сохранить email.
+
+setPhone(phone: string): void — сохранить телефон.
+
+setAddress(address: string): void — сохранить адрес.
+
+getData(): Partial<IBuyer> — получить все данные покупателя.
+
+clear(): void — очистить данные покупателя.
+
+validate(): Record<string, string> — проверить валидность данных и вернуть объект ошибок, например:
+
+{
+  payment: 'Не выбран вид оплаты',
+  email: 'Укажите емэйл',
+}
+
+
+Каждое свойство объекта ошибок соответствует полю, в котором есть ошибка.
