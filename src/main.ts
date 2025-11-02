@@ -1,129 +1,176 @@
+// src/main.ts
 import './scss/styles.scss';
-import { IProduct, IBuyer } from './types';
+
+import { API_URL } from './utils/constants';
+import { Api } from './components/base/Api'; // оставляю как есть
+import { ApiService } from './components/Models/ApiService';
+
 import { Products } from './components/Models/Products';
 import { Cart } from './components/Models/Cart';
 import { Buyer } from './components/Models/Buyer';
-import { ApiService } from './components/Models/ApiService';
-import { Api } from './components/base/Api'; 
-import { API_URL } from './utils/constants'; //
 
-// 1️⃣ Создаём экземпляры моделей данных
+import { eventBus } from './utils/event-bus';
+
+import { HeaderView } from './components/Views/HeaderView';
+import { GalleryView } from './components/Views/GalleryView';
+import { ModalView } from './components/Views/ModalView';
+import { CardCatalogView } from './components/Views/CardCatalogView';
+import { CardPreviewView } from './components/Views/CardPreviewView';
+import { BasketView } from './components/Views/BasketView';
+import { OrderFormView } from './components/Views/OrderFormView';
+import { ContactsFormView } from './components/Views/ContactsFormView';
+
+
+// Init services/models
+const api = new Api(API_URL);
+const apiService = new ApiService(api);
+
 const productsModel = new Products();
 const cartModel = new Cart();
 const buyerModel = new Buyer();
 
-// 2️⃣ Настраиваем API используя константу из проекта
-const apiInstance = new Api(API_URL);
+// Init views
+const headerContainer = document.querySelector('.header__container') as HTMLElement;
+const galleryContainer = document.querySelector('.gallery') as HTMLElement;
+const modalContainer = document.getElementById('modal-container') as HTMLElement;
 
-// 3️⃣ Создаём сервис для работы с сервером
-const apiService = new ApiService(apiInstance);
+const headerView = new HeaderView(headerContainer);
+const galleryView = new GalleryView(galleryContainer);
+const modalView = new ModalView(modalContainer);
 
-// 4️⃣ Тестируем модели данных (локальные данные)
-console.log('=== ТЕСТИРОВАНИЕ МОДЕЛЕЙ ДАННЫХ ===');
-
-const testProduct: IProduct = {
-  id: '1',
-  title: 'JS Handbook',
-  description: 'Книга по JavaScript',
-  image: 'js-book.jpg',
-  category: 'books',
-  price: 500
-};
-
-const testProduct2: IProduct = {
-  id: '2',
-  title: 'TypeScript Guide',
-  description: 'Руководство по TypeScript',
-  image: 'ts-book.jpg',
-  category: 'books',
-  price: 700
-};
-
-// Тестируем Products
-console.log('\n--- Тестирование Products ---');
-productsModel.setItems([testProduct, testProduct2]);
-console.log('Каталог товаров:', productsModel.getItems());
-
-productsModel.setSelectedItemById('1');
-console.log('Выбранный товар по ID:', productsModel.getSelectedItem());
-
-productsModel.setSelectedItem(testProduct2);
-console.log('Выбранный товар по объекту:', productsModel.getSelectedItem());
-
-// Тестируем Cart
-console.log('\n--- Тестирование Cart ---');
-cartModel.addItem(testProduct);
-console.log('Корзина после добавления:', cartModel.getItems());
-console.log('Общая стоимость:', cartModel.getTotal());
-console.log('Количество товаров:', cartModel.getCount());
-console.log('Есть ли товар с ID "1":', cartModel.hasItem('1'));
-console.log('Есть ли товар с ID "3":', cartModel.hasItem('3'));
-
-cartModel.removeItem(testProduct);
-console.log('Корзина после удаления:', cartModel.getItems());
-
-// Добавляем оба товара для дальнейшего тестирования
-cartModel.addItem(testProduct);
-cartModel.addItem(testProduct2);
-console.log('Корзина после добавления двух товаров:', cartModel.getItems());
-console.log('Итоговая стоимость:', cartModel.getTotal());
-
-// Тестируем Buyer
-console.log('\n--- Тестирование Buyer ---');
-buyerModel.setEmail('test@mail.com');
-buyerModel.setPhone('+123456789');
-buyerModel.setAddress('ул. Ленина, 1');
-buyerModel.setPayment('card');
-
-console.log('Данные покупателя:', buyerModel.getData());
-console.log('Ошибки в данных покупателя:', buyerModel.validate());
-
-// Тестируем частичное обновление данных
-buyerModel.setData({ email: 'new@mail.com', phone: '+987654321' });
-console.log('Данные после частичного обновления:', buyerModel.getData());
-
-// Тестируем валидацию с неполными данными
-const tempBuyer = new Buyer();
-tempBuyer.setData({ payment: 'cash' });
-console.log('Валидация неполных данных:', tempBuyer.validate());
-
-// 5️⃣ Получаем товары с сервера и сохраняем в модель
-console.log('\n--- Загрузка данных с сервера ---');
-
-apiService.fetchProducts()
-  .then((items) => {
-    // Сохраняем товары в модель
-    productsModel.setItems(items);
-    
-    // Выводим товары в консоль
-    console.log('Товары с сервера:', productsModel.getItems());
-    console.log('Количество загруженных товаров:', items.length);
-    
-    // Тестируем работу с загруженными данными
-    if (items.length > 0) {
-      const firstProduct = items[0];
-      productsModel.setSelectedItem(firstProduct);
-      console.log('Первый товар из загруженных:', productsModel.getSelectedItem());
-      
-      // Добавляем в корзину для демонстрации
-      cartModel.addItem(firstProduct);
-      console.log('Корзина после добавления товара с сервера:', cartModel.getItems().length, 'товаров');
-    }
-  })
-  .catch((err: unknown) => {
-    if (err instanceof Error) {
-      console.error('Ошибка получения товаров:', err.message);
-    } else {
-      console.error('Неизвестная ошибка при получении товаров:', err);
-    }
+// --- Model -> View handlers ---
+// products loaded -> render catalog
+eventBus.on('model:products:changed', (items: any) => {
+  const tpl = document.getElementById('card-catalog') as HTMLTemplateElement;
+  const nodes: HTMLElement[] = (items || []).map((p: any) => {
+    const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    const card = new CardCatalogView(node);
+    card.render(p);
+    return node;
   });
+  galleryView.catalog = nodes;
+});
 
-// 6️⃣ Тестируем очистку данных
-console.log('\n--- Тестирование очистки данных ---');
-cartModel.clear();
-console.log('Корзина после clear():', cartModel.getItems());
+// selected product -> show preview in modal
+eventBus.on('model:product:selected', (product: any) => {
+  if (!product) return;
+  const tpl = document.getElementById('card-preview') as HTMLTemplateElement;
+  const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+  const preview = new CardPreviewView(node);
+  preview.render(product);
+  modalView.content = node;
+  modalView.open();
+});
 
-buyerModel.clear();
-console.log('Данные покупателя после clear():', buyerModel.getData());
+// cart changed -> update header counter
+eventBus.on('model:cart:changed', (items: any) => {
+  headerView.setCounter(Array.isArray(items) ? items.length : 0);
+});
 
-console.log('=== ТЕСТИРОВАНИЕ ЗАВЕРШЕНО ===');
+// buyer change (optional)
+eventBus.on('model:buyer:changed', () => {
+  // can update visible forms or log
+});
+
+// --- View -> Presenter handlers ---
+// open card preview
+eventBus.on('view:card:open', (payload: any) => {
+  const id = payload?.id;
+  if (typeof id === 'string') productsModel.setSelectedItemById(id);
+});
+
+// toggle cart for product
+eventBus.on('view:product:toggle-cart', (payload: any) => {
+  const id = payload?.id;
+  if (!id || typeof id !== 'string') return;
+  const product = productsModel.getItemById(id);
+  if (!product) return;
+  if (cartModel.hasItem(id)) cartModel.removeItemById(id);
+  else cartModel.addItem(product);
+});
+
+// remove from cart
+eventBus.on('view:cart:remove', (payload: any) => {
+  const id = payload?.id;
+  if (!id) return;
+  cartModel.removeItemById(id);
+});
+
+// open basket modal
+eventBus.on('view:open:cart', () => {
+  const tpl = document.getElementById('basket') as HTMLTemplateElement;
+  const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+  const basketView = new BasketView(node);
+  basketView.renderItems(cartModel.getItems());
+  modalView.content = node;
+  modalView.open();
+
+  const onCartUpdated = (items: any) => basketView.renderItems(items);
+  eventBus.on('model:cart:changed', onCartUpdated);
+
+  // unsubscribe when modal closed
+  const onModalClosed = () => {
+    eventBus.off('model:cart:changed', onCartUpdated);
+    eventBus.off('view:modal:closed', onModalClosed);
+  };
+  eventBus.on('view:modal:closed', onModalClosed);
+});
+
+// open order form
+eventBus.on('view:order:open', () => {
+  const tpl = document.getElementById('order') as HTMLTemplateElement;
+  const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+  const order = new OrderFormView(node);
+  modalView.content = node;
+  modalView.open();
+
+  // when going to next, open contacts form with saved buyer data
+  const onNext = (payload: any) => {
+    buyerModel.setData({ payment: payload.payment, address: payload.address });
+    const tpl2 = document.getElementById('contacts') as HTMLTemplateElement;
+    const node2 = tpl2.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    const contacts = new ContactsFormView(node2);
+    modalView.content = node2;
+  };
+  eventBus.on('view:order:next', onNext);
+
+  // unsubscribe when modal closes
+  const onModalClosed = () => {
+    eventBus.off('view:order:next', onNext);
+    eventBus.off('view:modal:closed', onModalClosed);
+  };
+  eventBus.on('view:modal:closed', onModalClosed);
+});
+
+// submit order (contacts form)
+eventBus.on('view:order:submit', async (payload: any) => {
+  buyerModel.setData({ email: payload.email, phone: payload.phone });
+  const errors = buyerModel.validate();
+  if (Object.keys(errors).length) {
+    console.warn('Validation errors', errors);
+    return;
+  }
+
+  const items = cartModel.getItems();
+  try {
+    await apiService.sendOrder(buyerModel.getData(), items);
+    cartModel.clear();
+    buyerModel.clear();
+
+    const tpl = document.getElementById('success') as HTMLTemplateElement;
+    const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    modalView.content = node;
+  } catch (err) {
+    console.error('Order send error', err);
+  }
+});
+
+// --- initial load ---
+(async function init() {
+  try {
+    const items = await apiService.fetchProducts();
+    productsModel.setItems(items);
+  } catch (err) {
+    console.error('Ошибка загрузки каталога', err);
+  }
+})();

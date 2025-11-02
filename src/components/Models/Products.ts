@@ -1,32 +1,36 @@
-import { IProduct } from "../../types"; // путь к файлу index.ts
+// src/components/Models/Products.ts
+// src/components/Models/Products.ts
+import { IProduct } from '../../types';
+import { eventBus } from '../../utils/event-bus';
+
 export class Products {
   private items: IProduct[] = [];
   private selectedItem: IProduct | null = null;
 
-  // Сохраняем массив товаров
   setItems(items: IProduct[]): void {
     this.items = items;
+    eventBus.emit('model:products:changed', this.items);
   }
 
-  // Получаем массив товаров
   getItems(): IProduct[] {
     return this.items;
   }
 
-  // Устанавливаем выбранный товар по объекту
-  setSelectedItem(item: IProduct): void {
-    this.selectedItem = item;
+  getItemById(id: string): IProduct | null {
+    return this.items.find(p => p.id === id) || null;
   }
 
-  
+  setSelectedItem(item: IProduct | null): void {
+    this.selectedItem = item;
+    eventBus.emit('model:product:selected', this.selectedItem ?? undefined);
+  }
+
   setSelectedItemById(id: string): void {
-    const item = this.items.find(p => p.id === id) || null;
-    this.selectedItem = item;
+    const it = this.getItemById(id);
+    this.setSelectedItem(it);
   }
 
-  // Получаем выбранный товар
   getSelectedItem(): IProduct | null {
     return this.selectedItem;
   }
 }
-

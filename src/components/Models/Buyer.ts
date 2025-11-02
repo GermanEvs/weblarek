@@ -1,54 +1,36 @@
-import { IBuyer, TPayment } from "../../types"; // путь к файлу index.ts
-// Buyer.ts
+// src/components/Models/Buyer.ts
+import { IBuyer } from '../../types';
+import { eventBus } from '../../utils/event-bus';
 
 export class Buyer {
-  private data: IBuyer = {
-    payment: 'card', // или null/'' если TPayment позволяет
-    email: '',
-    phone: '',
-    address: ''
-  };
+  private data: Partial<IBuyer> = {};
 
-  // Сохраняем одно поле
-  setPayment(payment: TPayment) {
-    this.data.payment = payment;
-  }
-
-  setEmail(email: string) {
-    this.data.email = email;
-  }
-
-  setPhone(phone: string) {
-    this.data.phone = phone;
-  }
-
-  setAddress(address: string) {
-    this.data.address = address;
-  }
-
-  // Можно сохранить сразу весь объект
-  setData(data: Partial<IBuyer>) {
+  setData(data: Partial<IBuyer>): void {
     this.data = { ...this.data, ...data };
+    eventBus.emit('model:buyer:changed', this.getData());
   }
 
-  // Получение всех данных
   getData(): IBuyer {
-    return this.data;
+    return {
+      payment: this.data.payment,
+      email: this.data.email ?? '',
+      phone: this.data.phone ?? '',
+      address: this.data.address ?? '',
+    };
   }
 
-  // Очистка
-  clear() {
-    this.data = { payment: 'card', email: '', phone: '', address: '' };
+  clear(): void {
+    this.data = {};
+    eventBus.emit('model:buyer:changed', this.getData());
   }
 
-  // Валидация
-  validate() {
-    const errors: Partial<Record<keyof IBuyer, string>> = {};
-    if (!this.data.payment) errors.payment = 'Не выбран вид оплаты';
-    if (!this.data.email) errors.email = 'Укажите емэйл';
-    if (!this.data.phone) errors.phone = 'Укажите телефон';
-    if (!this.data.address) errors.address = 'Укажите адрес';
+  validate(): Record<string, string> {
+    const errors: Record<string, string> = {};
+    const d = this.getData();
+    if (!d.payment) errors.payment = 'Не выбран вид оплаты';
+    if (!d.address) errors.address = 'Укажите адрес';
+    if (!d.email) errors.email = 'Укажите емэйл';
+    if (!d.phone) errors.phone = 'Укажите телефон';
     return errors;
   }
 }
-
