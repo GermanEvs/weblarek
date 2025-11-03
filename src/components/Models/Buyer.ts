@@ -1,4 +1,3 @@
-// src/components/Models/Buyer.ts
 import { IBuyer } from '../../types';
 import { eventBus } from '../../utils/event-bus';
 
@@ -24,13 +23,29 @@ export class Buyer {
     eventBus.emit('model:buyer:changed', this.getData());
   }
 
-  validate(): Record<string, string> {
+  validateOrder(): Record<string, string> {
     const errors: Record<string, string> = {};
     const d = this.getData();
+    
     if (!d.payment) errors.payment = 'Не выбран вид оплаты';
-    if (!d.address) errors.address = 'Укажите адрес';
-    if (!d.email) errors.email = 'Укажите емэйл';
-    if (!d.phone) errors.phone = 'Укажите телефон';
+    if (!d.address?.trim()) errors.address = 'Укажите адрес';
+    
     return errors;
+  }
+
+  validateContacts(): Record<string, string> {
+    const errors: Record<string, string> = {};
+    const d = this.getData();
+    
+    if (!d.payment) errors.payment = 'Не выбран вид оплаты';
+    if (!d.address?.trim()) errors.address = 'Укажите адрес';
+    if (!d.email?.trim()) errors.email = 'Укажите емэйл';
+    if (!d.phone?.trim()) errors.phone = 'Укажите телефон';
+    
+    return errors;
+  }
+
+  validate(): Record<string, string> {
+    return this.validateContacts();
   }
 }

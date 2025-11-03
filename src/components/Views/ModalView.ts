@@ -1,4 +1,3 @@
-// src/components/Views/ModalView.ts
 import { Component } from "../../components/base/Component";
 import { eventBus } from "../../utils/event-bus";
 
@@ -35,6 +34,11 @@ export class ModalView extends Component<{}> {
     document.body.style.overflow = "";
     this.content = null;
     eventBus.emit("view:modal:closed", undefined);
+  }
+
+  // ✅ Добавляем метод getContainer
+  getContainer(): HTMLElement {
+    return this.container;
   }
 
   private onOutsideClick(e: MouseEvent) {

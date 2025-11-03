@@ -1,4 +1,3 @@
-// src/components/Views/ContactsFormView.ts
 import { Component } from "../../components/base/Component";
 import { eventBus } from "../../utils/event-bus";
 
@@ -24,45 +23,45 @@ export class ContactsFormView extends Component<{}> {
     ) as HTMLButtonElement;
     this.errorsEl = container.querySelector(".form__errors") as HTMLElement;
 
+    // ✅ Исправляем привязку контекста
+    this.onInput = this.onInput.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+
     this.emailInput.addEventListener("input", this.onInput);
     this.phoneInput.addEventListener("input", this.onInput);
     this.formEl.addEventListener("submit", this.onSubmit);
-
-    this.updateState();
   }
 
-  private onInput = () => {
-    this.updateState();
+  private onInput() {
+    // ✅ Эмитим события при вводе в форму контактов
     eventBus.emit("view:form:change", {
       email: this.emailInput.value.trim(),
       phone: this.phoneInput.value.trim(),
     });
-  };
+  }
 
-  private onSubmit = (e: Event) => {
+  private onSubmit(e: Event) {
     e.preventDefault();
-
-    const errors: Record<string, string> = {};
-    if (!this.emailInput.value.trim()) errors.email = "Введите Email";
-    if (!this.phoneInput.value.trim()) errors.phone = "Введите телефон";
-
-    if (Object.keys(errors).length) {
-      this.errorsEl.textContent = Object.values(errors).join("; ");
-      return;
-    }
-
     eventBus.emit("view:order:submit", {
       email: this.emailInput.value.trim(),
       phone: this.phoneInput.value.trim(),
     });
-  };
+  }
 
-  private updateState() {
-    const hasEmail = !!this.emailInput.value.trim();
-    const hasPhone = !!this.phoneInput.value.trim();
-    const isFormValid = hasEmail && hasPhone;
+  setData(email: string | undefined, phone: string | undefined) {
+    this.emailInput.value = email || '';
+    this.phoneInput.value = phone || '';
+  }
 
-    this.payBtn.disabled = !isFormValid;
-    this.errorsEl.textContent = "";
+  setErrors(errors: string[]) {
+    this.errorsEl.textContent = errors.join("; ");
+  }
+
+  setValid(valid: boolean) {
+    this.payBtn.disabled = !valid;
+  }
+
+  getContainer(): HTMLElement {
+    return this.container;
   }
 }

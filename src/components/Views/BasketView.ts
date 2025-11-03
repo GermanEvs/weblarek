@@ -1,14 +1,15 @@
-// src/components/Views/BasketView.ts
 import { Component } from "../../components/base/Component";
-import { CardBasketView } from "./CardBasketView";
 import { eventBus } from "../../utils/event-bus";
-import { IProduct } from "../../types";
 
-export class BasketView extends Component<{}> {
+interface BasketData {
+  items: HTMLElement[];
+  total: number;
+}
+
+export class BasketView extends Component<BasketData> {
   private listEl: HTMLElement;
   private totalEl: HTMLElement;
   private orderBtn: HTMLButtonElement;
-  private tpl: HTMLTemplateElement | null;
 
   constructor(container: HTMLElement) {
     super(container);
@@ -17,38 +18,34 @@ export class BasketView extends Component<{}> {
     this.orderBtn = container.querySelector(
       ".basket__button"
     ) as HTMLButtonElement;
-    this.tpl = document.getElementById(
-      "card-basket"
-    ) as HTMLTemplateElement | null;
 
     this.onOrderClick = this.onOrderClick.bind(this);
     this.orderBtn.addEventListener("click", this.onOrderClick);
   }
 
-  renderItems(items: IProduct[]) {
+  render(data?: Partial<BasketData>): HTMLElement {
+    if (!data) return this.container;
+
+    const items = data.items || [];
+    const total = data.total || 0;
+
     this.listEl.replaceChildren();
     if (!items.length) {
       this.listEl.textContent = "Корзина пуста";
       this.totalEl.textContent = "0 синапсов";
       this.orderBtn.disabled = true;
-      return;
+    } else {
+      this.listEl.replaceChildren(...items);
+      this.totalEl.textContent = `${total} синапсов`;
+      this.orderBtn.disabled = false;
     }
 
-    const nodes = items.map((p, idx) => {
-      const node = this.tpl!.content.firstElementChild!.cloneNode(
-        true
-      ) as HTMLElement;
-      const card = new CardBasketView(node);
-      card.render(p);
-      return node;
-    });
+    return this.container;
+  }
 
-    this.listEl.replaceChildren(...nodes);
-    this.totalEl.textContent = `${items.reduce(
-      (s, p) => s + (p.price ?? 0),
-      0
-    )} синапсов`;
-    this.orderBtn.disabled = false;
+  // ✅ Добавляем метод getContainer
+  getContainer(): HTMLElement {
+    return this.container;
   }
 
   private onOrderClick() {

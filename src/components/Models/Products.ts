@@ -1,5 +1,3 @@
-// src/components/Models/Products.ts
-// src/components/Models/Products.ts
 import { IProduct } from '../../types';
 import { eventBus } from '../../utils/event-bus';
 
@@ -20,14 +18,14 @@ export class Products {
     return this.items.find(p => p.id === id) || null;
   }
 
-  setSelectedItem(item: IProduct | null): void {
-    this.selectedItem = item;
-    eventBus.emit('model:product:selected', this.selectedItem ?? undefined);
-  }
-
   setSelectedItemById(id: string): void {
     const it = this.getItemById(id);
     this.setSelectedItem(it);
+  }
+
+  setSelectedItem(item: IProduct | null): void {
+    this.selectedItem = item;
+    eventBus.emit('model:product:selected', this.selectedItem ?? undefined);
   }
 
   getSelectedItem(): IProduct | null {

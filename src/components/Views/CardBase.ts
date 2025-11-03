@@ -1,11 +1,9 @@
-// src/components/Views/CardBase.ts
 import { Component } from "../../components/base/Component";
 import { IProduct } from "../../types";
 import { eventBus } from "../../utils/event-bus";
 import { CDN_URL, categoryMap } from "../../utils/constants";
 
 export abstract class CardBase extends Component<IProduct> {
-  protected product!: IProduct;
   protected root: HTMLElement;
 
   constructor(container: HTMLElement) {
@@ -13,26 +11,25 @@ export abstract class CardBase extends Component<IProduct> {
     this.root = container;
   }
 
-  protected bindOpenByRoot() {
+  protected bindOpenByRoot(id: string) {
     this.root.addEventListener("click", () => {
-      eventBus.emit("view:card:open", { id: this.product.id });
+      eventBus.emit("view:card:open", { id });
     });
   }
 
-  protected setImage(el: HTMLImageElement | null, fileName?: string | null) {
+  protected setImage(el: HTMLImageElement | null, fileName?: string | null, title?: string) {
     if (!el) return;
     if (!fileName) {
       el.removeAttribute("src");
       return;
     }
     el.src = `${CDN_URL}/${fileName}`;
-    el.alt = this.product.title;
+    el.alt = title || '';
   }
 
   protected setCategory(el: HTMLElement | null, category: string) {
     if (!el) return;
 
-    // Исправленная строка - используем type assertion
     const cls =
       categoryMap[category as keyof typeof categoryMap] ||
       categoryMap["другое"];
@@ -42,7 +39,6 @@ export abstract class CardBase extends Component<IProduct> {
   }
 
   render(data?: Partial<IProduct>): HTMLElement {
-    if (data) this.product = data as IProduct;
     return this.root;
   }
 }
